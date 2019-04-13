@@ -1,0 +1,46 @@
+- name: Create Azure Kubernetes Service
+  hosts: localhost
+  connection: local
+  vars:
+    resource_group: default-rg
+    location: eastus
+    aks_name: privatek8scluster
+    username: clusteradmin
+    ssh_key: "<replace with ssh key>"
+    client_id: "<replace with service principal app id>"
+    client_secret: "<replace with SP client secret"
+
+  tasks:
+  - name: Create resource group
+    azure_rm_resourcegroup:
+      name: "{{ resource_group }}"
+      location: "{{ location }}"
+
+  - name: Create a managed Azure Container Services (AKS) cluster
+    azure_rm_aks:
+      name: "{{ aks_name }}"
+      location: "{{ location }}"
+      resource_group: "{{ resource_group }}"
+      dns_prefix: "{{ aks_name }}"
+      linux_profile:
+        admin_username: "{{ username }}"
+        ssh_key: "{{ ssh_key }}"
+      service_principal:
+        client_id: "{{ client_id }}"
+        client_secret: "{{ client_secret }}"
+      agent_pool_profiles:
+        - name: nodepool1
+          count: 2
+          vm_size: Standard_D2_v2
+          vnet_subnet_id: "<replace with your vnet id>"
+      network_profile:
+        - network_plugin: "azure"
+      aad_profile:
+        - client_app_id: "<AAD_client_ID>"
+          server_app_id: "<AAD_server_app_ID>"
+          server_app_secret: "<AAD_server_app_secret>"
+          tenant_id: "<tenant_id>"
+      tags:
+        Environment: Production
+      state: present
+      kubernetes_version: 1.y.z
